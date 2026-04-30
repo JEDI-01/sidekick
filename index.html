@@ -127,6 +127,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans KR',s
 .adopt-row{margin-top:4px;padding-left:28px;}
 .adopt-btn{font-size:10px;padding:2px 9px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .2s;}
 .adopt-btn:hover{border-color:var(--border2);color:var(--muted);}
+.msg-del-btn{background:none;border:none;color:transparent;font-size:13px;cursor:pointer;padding:1px 4px;border-radius:3px;transition:all .15s;margin-left:2px;line-height:1;}
+.mmeta:hover .msg-del-btn{color:var(--dim);}
+.msg-del-btn:hover{color:var(--healthcare)!important;background:rgba(255,69,58,.08);}
 .adopt-btn.picked{border-color:var(--accent);color:var(--accent);background:rgba(0,113,227,.06);}
 
 /* 입력창 */
@@ -758,8 +761,8 @@ async function sendST() {
   pill.textContent = '응답 중';
 
   try {
-    const res  = await fetch(N8N, {method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({question:q,category:'daily',target:s.ai,history:homeChats.slice(-8),memos:'없음'})});
+    const stPayload = {question:q,category:'daily',target:s.ai,history:homeChats.slice(-8).map(c=>({role:c.role,ai:c.ai||'',content:c.content.slice(0,200)})),memos:'없음'};
+    const res  = await fetch(N8N, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(stPayload)});
     const data = await res.json();
     const txt  = (s.ai==='gemini'?data.gemini:data.gpt) || '답변을 받지 못했습니다.';
 
@@ -881,7 +884,7 @@ function renderChatMsgs(id) {
     el.appendChild(b);
   }
 
-  chats.forEach(c => el.appendChild(mkMsgDiv(c.role,c.ai,c.content,false,c.time)));
+  chats.forEach((c,i) => el.appendChild(mkMsgDiv(c.role,c.ai,c.content,false,c.time,i)));
   scrBot('chatMsgs');
   document.getElementById('chatPill').style.display = 'none';
 }
@@ -893,20 +896,33 @@ function delMemo(idx) {
 }
 
 // ── 메시지 DOM ──
-function mkMsgDiv(role, ai, content, showAdopt, time) {
+function mkMsgDiv(role, ai, content, showAdopt, time, idx) {
   const name = role==='user'?'편도현':ai==='gemini'?'제미니':ai==='gpt'?'지피':'클로';
   const ac   = role==='user'?'user':ai;
   const div  = document.createElement('div');
   div.className = `mg ${role==='user'?'user':'ai '+(ai||'')}`;
+  div.setAttribute('data-idx', idx !== undefined ? idx : '');
   div.innerHTML = `
     <div class="mmeta">
       <div class="mav ${ac}">${role==='user'?'편':name[0]}</div>
       <span class="mname ${ac}">${name}</span>
       <span class="mtime">${time||nowStr()}</span>
+      <button class="msg-del-btn" onclick="delMsg(this)" title="삭제">×</button>
     </div>
     <div class="bubble">${role==='user'?esc(content):fmt(content)}</div>
     ${showAdopt?`<div class="adopt-row"><button class="adopt-btn" onclick="adopt(this)">채택</button></div>`:''}`;
   return div;
+}
+
+function delMsg(btn) {
+  const div = btn.closest('.mg');
+  const idx = parseInt(div.getAttribute('data-idx'));
+  if (isNaN(idx)) { div.remove(); return; }
+  const chats = roomChats[currentRoom]||[];
+  chats.splice(idx, 1);
+  roomChats[currentRoom] = chats;
+  save();
+  renderChatMsgs(currentRoom);
 }
 
 function mkTyping(id, ai) {
@@ -982,8 +998,8 @@ async function sendChat() {
 
   const memos = (roomMemos[currentRoom]||[]).slice(-3).map(m=>m.summary).join('\n---\n');
   try {
-    const res  = await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({question:q,category:rooms[currentRoom]?.type||'daily',target,history:(roomChats[currentRoom]||[]).slice(-10),memos:memos||'없음'})});
+    const payload = {question:q,category:rooms[currentRoom]?.type||'daily',target,history:(roomChats[currentRoom]||[]).slice(-10).map(c=>({role:c.role,ai:c.ai||'',content:c.content.slice(0,200)})),memos:memos||'없음'};
+    const res  = await fetch(N8N,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const data = await res.json();
     const gT   = data.gemini||'', pT=data.gpt||'';
 
