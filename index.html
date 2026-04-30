@@ -951,26 +951,9 @@ function scrBot(id) { const el=document.getElementById(id); if(el) setTimeout(()
 const tLabels={gemini:'→ 제미니에게',gpt:'→ 지피에게',claude:'→ 클로에게',all:'→ 전체에게'};
 
 function detTarget(t) {
-  // 1. 호출형 패턴 우선 — "지피야", "제미니야", "클로야", "지피는", "제미니는" 등
-  const callPattern = /^[\s]*(지피|gpt)(야|아|는|아~|야~|,|~)|(지피|gpt)(야|아|는|아~|야~|,|~)/i;
-  const callGemini  = /^[\s]*(제미니|gemini)(야|아|는|아~|야~|,|~)|(제미니|gemini)(야|아|는|아~|야~|,|~)/i;
-  const callClaude  = /^[\s]*(클로|claude)(야|아|는|아~|야~|,|~)|(클로|claude)(야|아|는|아~|야~|,|~)/i;
-
-  if (callGemini.test(t)) return 'gemini';
-  if (callPattern.test(t)) return 'gpt';
-  if (callClaude.test(t)) return 'claude';
-
-  // 2. 둘 다 언급 → all
-  const hasGemini = /제미니|gemini/i.test(t);
-  const hasGpt    = /지피|gpt/i.test(t);
-  const hasClaude = /클로|claude/i.test(t);
-  if ((hasGemini && hasGpt) || (hasGemini && hasClaude) || (hasGpt && hasClaude)) return 'all';
-
-  // 3. 단독 언급
-  if (hasGemini) return 'gemini';
-  if (hasGpt)    return 'gpt';
-  if (hasClaude) return 'claude';
-
+  if (/제미니|gemini/i.test(t)) return 'gemini';
+  if (/지피|gpt/i.test(t)) return 'gpt';
+  if (/클로|claude/i.test(t)) return 'claude';
   return 'all';
 }
 
