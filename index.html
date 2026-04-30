@@ -507,6 +507,8 @@ let nrType    = '';
 let pendSum   = '';
 let endingRoom = null;
 let selHDayIdx = -1;
+let memoDetailRoomId = null;
+let memoDetailIdx = -1;
 let relayActive = false;
 let relayTimer  = null;
 let relayTurn   = 'gemini'; // 다음 릴레이 턴
@@ -900,13 +902,36 @@ function renderChatMsgs(id) {
   if (memos.length) {
     const b = document.createElement('div');
     b.className = 'memo-banner';
-    b.innerHTML = `<div class="memo-hdr" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'"><span class="memo-hdr-t">MEMO · ${memos.length}개</span><span>▾</span></div><div class="memo-list">${memos.map((m,i)=>`<div class="memo-row"><span class="memo-date">${m.date}</span><button class="memo-del" onclick="delMemo(${i})">삭제</button></div>`).join('')}</div>`;
+    b.innerHTML = `<div class="memo-hdr" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'"><span class="memo-hdr-t">MEMO · ${memos.length}개</span><span>▾</span></div><div class="memo-list">${memos.map((m,i)=>`<div class="memo-row"><span class="memo-date" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px;" onclick="openMemoDetail('${id}',${i})">${m.date}</span><button class="memo-del" onclick="delMemo(${i})">삭제</button></div>`).join('')}</div>`;
     el.appendChild(b);
   }
 
   chats.forEach((c,i) => el.appendChild(mkMsgDiv(c.role,c.ai,c.content,false,c.time,i)));
   scrBot('chatMsgs');
   document.getElementById('chatPill').style.display = 'none';
+}
+
+function openMemoDetail(roomId, idx) {
+  const memos = roomMemos[roomId] || [];
+  const memo  = memos[idx];
+  if (!memo) return;
+  memoDetailRoomId = roomId;
+  memoDetailIdx    = idx;
+  document.getElementById('memoDetailTitle').textContent = memo.date + ' · 메모';
+  document.getElementById('memoDetailBody').textContent  = memo.summary;
+  document.getElementById('memoDetailModal').classList.add('open');
+}
+
+function delMemoFromDetail() {
+  if (!memoDetailRoomId || memoDetailIdx < 0) return;
+  if (!confirm('이 메모를 삭제할까요?')) return;
+  const memos = roomMemos[memoDetailRoomId] || [];
+  memos.splice(memoDetailIdx, 1);
+  roomMemos[memoDetailRoomId] = memos;
+  save();
+  cm('memoDetailModal');
+  if (memoDetailRoomId === currentRoom) renderChatMsgs(currentRoom);
+  renderRooms();
 }
 
 function delMemo(idx) {
