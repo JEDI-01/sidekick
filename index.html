@@ -417,8 +417,16 @@ textarea#stInp::placeholder{color:var(--dim);}
 <div class="modal-overlay" id="endModal">
   <div class="modal">
     <div class="mhdr"><span class="mtitle">대화 완료 · 요약 저장</span><button class="mclose" onclick="cm('endModal')">×</button></div>
-    <div class="mbody"><div style="font-size:12px;color:var(--dim);margin-bottom:11px;">이번 대화를 요약해서 저장합니다.</div><div class="sbox" id="summaryBox"></div></div>
-    <div class="mfoot"><button class="btn btn-ghost" onclick="cm('endModal')">취소</button><button class="btn btn-primary" onclick="saveMemo()">저장 후 초기화</button></div>
+    <div class="mbody">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:11px;" id="endModalDesc">대화를 어떻게 처리할까요?</div>
+      <div class="sbox" id="summaryBox" style="display:none;"></div>
+      <div id="summaryLoading" style="display:none;font-size:12px;color:var(--dim);padding:16px;text-align:center;">제미니가 요약 중...</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="cm('endModal')">✕ 그대로 두기</button>
+      <button class="btn btn-ghost" onclick="justReset()" style="color:var(--healthcare);border-color:var(--healthcare);">초기화</button>
+      <button class="btn btn-primary" id="saveAndResetBtn" onclick="saveAndReset()">저장하고 초기화</button>
+    </div>
   </div>
 </div>
 <div class="modal-overlay" id="memoFullModal">
@@ -797,10 +805,12 @@ async function sendST() {
 // ── 홈 세션 완료 ──
 function endHomeSession() {
   if (!homeChats.length) { alert('대화 내용이 없습니다.'); return; }
-  const uMsgs = homeChats.filter(c=>c.role==='user');
-  pendSum = `[${new Date().toLocaleDateString('ko-KR')}] 홈 대화\n총 ${uMsgs.length}개 질문\n\n${uMsgs.map((c,i)=>`${i+1}. ${c.content.slice(0,40)}`).join('\n')}`;
   endingRoom = '__home__';
-  document.getElementById('summaryBox').textContent = pendSum;
+  document.getElementById('summaryBox').style.display = 'none';
+  document.getElementById('summaryLoading').style.display = 'none';
+  document.getElementById('summaryBox').textContent = '';
+  document.getElementById('endModalDesc').textContent = '대화를 어떻게 처리할까요?';
+  document.getElementById('saveAndResetBtn').disabled = false;
   document.getElementById('endModal').classList.add('open');
 }
 
@@ -1160,11 +1170,67 @@ async function doRelayTurn() {
 function endRoom() {
   const chats = roomChats[currentRoom]||[];
   if (!chats.length) { alert('대화 내용이 없습니다.'); return; }
-  const uMsgs = chats.filter(c=>c.role==='user');
-  pendSum = `[${new Date().toLocaleDateString('ko-KR')}]\n총 ${uMsgs.length}개 질문\n\n${uMsgs.map((c,i)=>`${i+1}. ${c.content.slice(0,40)}`).join('\n')}`;
   endingRoom = currentRoom;
-  document.getElementById('summaryBox').textContent = pendSum;
+  document.getElementById('summaryBox').style.display = 'none';
+  document.getElementById('summaryLoading').style.display = 'none';
+  document.getElementById('summaryBox').textContent = '';
+  document.getElementById('endModalDesc').textContent = '대화를 어떻게 처리할까요?';
+  document.getElementById('saveAndResetBtn').disabled = false;
   document.getElementById('endModal').classList.add('open');
+}
+
+function justReset() {
+  // 저장 없이 초기화
+  if (endingRoom==='__home__') {
+    homeChats=[]; homeDate=new Date().toLocaleDateString('ko-KR'); save(); cm('endModal'); renderDashboard(); return;
+  }
+  roomChats[endingRoom]=[]; save(); cm('endModal');
+  if(endingRoom===currentRoom) renderChatMsgs(currentRoom); renderRooms();
+}
+
+async function saveAndReset() {
+  // 제미니에게 요약 요청 후 저장
+  const btn = document.getElementById('saveAndResetBtn');
+  btn.disabled = true;
+  document.getElementById('summaryLoading').style.display = 'block';
+  document.getElementById('endModalDesc').textContent = '제미니가 요약하고 있어요...';
+
+  const chats = endingRoom==='__home__' ? homeChats : (roomChats[endingRoom]||[]);
+  const chatText = chats.map(c => {
+    const name = c.role==='user'?'도현님':c.ai==='gemini'?'제미니':'지피';
+    return `${name}: ${c.content.slice(0,200)}`;
+  }).join('
+');
+
+  let summary = '';
+  try {
+    const res = await fetch(N8N, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        question: `다음 대화를 핵심만 간결하게 요약해주세요. 주요 질문, 핵심 결론, 인사이트 순으로 정리해주세요:
+
+${chatText.slice(0,2000)}`,
+        category: endingRoom==='__home__'?'daily':(rooms[endingRoom]?.type||'daily'),
+        target: 'gemini',
+        history: [],
+        memos: '없음'
+      })
+    });
+    const data = await res.json();
+    summary = data.gemini || chatText.slice(0,300);
+  } catch(e) {
+    summary = chats.filter(c=>c.role==='user').map((c,i)=>`${i+1}. ${c.content.slice(0,60)}`).join('
+');
+  }
+
+  document.getElementById('summaryLoading').style.display = 'none';
+  document.getElementById('summaryBox').style.display = 'block';
+  document.getElementById('summaryBox').textContent = summary;
+  pendSum = summary;
+
+  // 저장
+  saveMemo();
 }
 
 function saveMemo() {
