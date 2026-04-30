@@ -1230,8 +1230,7 @@ ${chatText.slice(0,2000)}`,
     const data = await res.json();
     summary = data.gemini || chatText.slice(0,300);
   } catch(e) {
-    summary = chats.filter(c=>c.role==='user').map((c,i)=>`${i+1}. ${c.content.slice(0,60)}`).join('
-');
+    summary = chats.filter(c=>c.role==='user').map((c,i)=>`${i+1}. ${c.content.slice(0,60)}`).join('\n');
   }
 
   document.getElementById('summaryLoading').style.display = 'none';
