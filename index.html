@@ -492,6 +492,9 @@ let nrType    = '';
 let pendSum   = '';
 let endingRoom = null;
 let selHDayIdx = -1;
+let relayActive = false;
+let relayTimer  = null;
+let relayTurn   = 'gemini'; // 다음 릴레이 턴
 
 // 링 애니메이션
 let ringAnimId = null;
@@ -951,9 +954,34 @@ function scrBot(id) { const el=document.getElementById(id); if(el) setTimeout(()
 const tLabels={gemini:'→ 제미니에게',gpt:'→ 지피에게',claude:'→ 클로에게',all:'→ 전체에게'};
 
 function detTarget(t) {
-  if (/제미니|gemini/i.test(t)) return 'gemini';
-  if (/지피|gpt/i.test(t)) return 'gpt';
-  if (/클로|claude/i.test(t)) return 'claude';
+  // 호출형 감지 — 이름 뒤에 바로 호출어가 오는 패턴
+  const callGpt    = /지피(야|아|야~|아~)/;
+  const callGemini = /제미니(야|아|야~|아~)/;
+  const callClaude = /클로(야|아|야~|아~)/;
+
+  const gptPos    = t.search(callGpt);
+  const geminiPos = t.search(callGemini);
+  const claudePos = t.search(callClaude);
+
+  const callMatches = [
+    {target:'gpt',    pos: gptPos},
+    {target:'gemini', pos: geminiPos},
+    {target:'claude', pos: claudePos},
+  ].filter(m => m.pos >= 0).sort((a,b) => a.pos - b.pos);
+
+  // 호출형이 1개면 그 대상, 여러 개면 첫 번째
+  if (callMatches.length >= 1) return callMatches[0].target;
+
+  // 호출형 없을 때 — 정확한 이름 언급 체크
+  const hasGemini = /제미니/.test(t);
+  const hasGpt    = /지피/.test(t);
+  const hasClaude = /클로/.test(t);
+  const count = [hasGemini, hasGpt, hasClaude].filter(Boolean).length;
+  if (count > 1) return 'all';
+  if (hasGemini) return 'gemini';
+  if (hasGpt)    return 'gpt';
+  if (hasClaude) return 'claude';
+
   return 'all';
 }
 
@@ -973,6 +1001,20 @@ async function sendChat() {
   const inp = document.getElementById('chatInp');
   const q   = inp.value.trim();
   if (!q) return;
+
+  // 중단 키워드
+  if (/^(잠깐|스톱|stop|멈춰|그만|pause)$/i.test(q.trim())) {
+    stopRelay();
+    inp.value=''; inp.style.height='auto';
+    const el = document.getElementById('chatMsgs');
+    const notice = document.createElement('div');
+    notice.className = 'divider';
+    notice.innerHTML = '<div class="div-label">대화 일시 중단</div>';
+    el.appendChild(notice);
+    scrBot('chatMsgs');
+    return;
+  }
+
   const btn = document.getElementById('chatSendBtn');
   btn.disabled=true; inp.value=''; inp.style.height='auto';
   document.getElementById('chatBadge').className='tbadge';
@@ -1029,6 +1071,89 @@ async function sendChat() {
   save(); renderRooms();
   pill.className='rpill done'; pill.textContent='완료';
   btn.disabled=false;
+
+  // 릴레이 자동 시작 (all 모드일 때)
+  if (target === 'all') {
+    relayTurn = 'gpt'; // 첫 번째 릴레이는 지피부터
+    startRelay();
+  }
+}
+
+function startRelay() {
+  if (relayActive) return;
+  relayActive = true;
+  scheduleRelay();
+}
+
+function stopRelay() {
+  relayActive = false;
+  if (relayTimer) { clearTimeout(relayTimer); relayTimer = null; }
+}
+
+function scheduleRelay() {
+  if (!relayActive) return;
+  relayTimer = setTimeout(() => doRelayTurn(), 1500);
+}
+
+async function doRelayTurn() {
+  if (!relayActive || !currentRoom) return;
+
+  const chats   = roomChats[currentRoom] || [];
+  const target  = relayTurn === 'gemini' ? 'relay_gemini' : 'relay_gpt';
+  const aiName  = relayTurn === 'gemini' ? '제미니' : '지피';
+  const tid     = Date.now();
+  const typingId = 'relay_' + tid;
+
+  const el = document.getElementById('chatMsgs');
+  el.appendChild(mkTyping(typingId, relayTurn));
+  scrBot('chatMsgs');
+
+  const pill = document.getElementById('chatPill');
+  pill.style.display = 'block';
+  pill.className = 'rpill active';
+  pill.textContent = aiName + ' 응답 중';
+
+  const memos = (roomMemos[currentRoom]||[]).slice(-3).map(m=>m.summary).join('\n---\n');
+  const lastMsg = chats.slice(-1)[0]?.content || '';
+
+  try {
+    const payload = {
+      question: lastMsg.slice(0, 300),
+      category: rooms[currentRoom]?.type || 'daily',
+      target,
+      history: chats.slice(-10).map(c=>({role:c.role,ai:c.ai||'',content:c.content.slice(0,200)})),
+      memos: memos || '없음'
+    };
+    const res  = await fetch(N8N, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const data = await res.json();
+    const txt  = (relayTurn==='gemini' ? data.gemini : data.gpt) || '';
+
+    if (txt) {
+      replTyping(typingId, relayTurn, txt, false);
+      roomChats[currentRoom].push({role:'ai', ai:relayTurn, content:txt, time:nowStr()});
+      logU(aiName, txt.slice(0,30));
+      save();
+      renderRooms();
+      scrBot('chatMsgs');
+
+      // 다음 턴 전환
+      relayTurn = relayTurn === 'gemini' ? 'gpt' : 'gemini';
+      pill.className = 'rpill done';
+      pill.textContent = '완료';
+
+      // 계속 릴레이
+      scheduleRelay();
+    } else {
+      stopRelay();
+      pill.className = 'rpill done';
+      pill.textContent = '완료';
+    }
+  } catch(e) {
+    replTyping(typingId, relayTurn, '연결 오류: ' + e.message, false);
+    stopRelay();
+    pill.className = 'rpill done';
+    pill.textContent = '완료';
+  }
 }
 
 // ── 방 완료 ──
