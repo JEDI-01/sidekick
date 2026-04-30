@@ -1210,8 +1210,7 @@ async function saveAndReset() {
   const chatText = chats.map(c => {
     const name = c.role==='user'?'도현님':c.ai==='gemini'?'제미니':'지피';
     return `${name}: ${c.content.slice(0,200)}`;
-  }).join('
-');
+  }).join('\n');
 
   let summary = '';
   try {
