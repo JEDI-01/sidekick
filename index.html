@@ -263,7 +263,7 @@ textarea#stInp::placeholder{color:var(--dim);}
 .btn-primary:hover{background:rgba(255,255,255,.85);}
 .btn-danger{background:transparent;border:1px solid var(--healthcare);color:var(--healthcare);}
 .btn-danger:hover{background:rgba(255,69,58,.06);}
-.sbox{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:13px;font-size:12px;line-height:1.8;color:var(--muted);white-space:pre-wrap;min-height:70px;}
+.sbox{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:16px;font-size:13px;line-height:1.9;color:var(--text);white-space:pre-wrap;min-height:80px;}
 .fg{display:flex;flex-direction:column;gap:5px;}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 .fg-full{grid-column:1/-1;}
@@ -829,15 +829,28 @@ function renderHomeHistory() {
   if (!homeSaved.length) { list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--dim);font-size:12px;">저장된 기록이 없습니다</div>'; return; }
   list.innerHTML = homeSaved.map((s,i)=>`
     <div class="hday-item" onclick="openHomeDay(${i})">
-      <div><div class="hday-date">${s.date}</div><div class="hday-prev">${s.summary.slice(0,50)}...</div></div>
-      <span class="hday-arr">›</span>
+      <div style="flex:1;min-width:0;">
+        <div class="hday-date">${s.date}</div>
+        <div class="hday-prev">${s.summary.slice(0,60)}...</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;" onclick="event.stopPropagation();delHomeDayDirect(${i})">삭제</button>
+        <span class="hday-arr">›</span>
+      </div>
     </div>`).join('');
+}
+
+function delHomeDayDirect(idx) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  homeSaved.splice(idx, 1);
+  save();
+  renderHomeHistory();
 }
 
 function openHomeDay(idx) {
   selHDayIdx = idx;
   const s = homeSaved[idx];
-  document.getElementById('hdMTitle').textContent = s.date + ' · 홈 대화';
+  document.getElementById('hdMTitle').textContent = s.date + ' · 홈 대화 요약';
   document.getElementById('hdMBody').textContent  = s.summary;
   document.getElementById('homeDayModal').classList.add('open');
 }
@@ -855,7 +868,9 @@ function renderRooms() {
   Object.values(rooms).forEach(room => {
     const memos = roomMemos[room.id]||[];
     const chats = roomChats[room.id]||[];
-    const prev  = chats.length ? chats[chats.length-1].content.slice(0,15)+'...' : '대화를 시작하세요';
+    let prev = '대화를 시작하세요';
+    if (chats.length) prev = chats[chats.length-1].content.slice(0,15)+'...';
+    else if (memos.length) prev = '메모 ' + memos.length + '개 · ' + memos[memos.length-1].date;
     const div   = document.createElement('div');
     div.className = `room-item ${room.type||'custom'}${currentRoom===room.id?' active':''}`;
     div.setAttribute('data-id', room.id);
@@ -864,7 +879,7 @@ function renderRooms() {
       <div class="room-dot"></div>
       <div class="room-info">
         <div class="room-name-el" id="rn-${room.id}">${room.name}</div>
-        <div class="room-sub">${prev}${memos.length?` · 메모 ${memos.length}`:''}</div>
+        <div class="room-sub">${prev}</div>
       </div>
       <div class="room-acts">
         <button class="room-act" onclick="startRename(event,'${room.id}')">✎</button>
