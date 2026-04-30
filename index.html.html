@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIDEKICK</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#000;--bg1:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#f5f5f7;--muted:#86868b;--dim:#3a3a3c;
+  --gemini:#4f9eff;--gpt:#19c37d;--claude:#e07b54;--user:#fff;
+  --accent:#0071e3;
+  --healthcare:#ff453a;--english:#30d158;--daily:#ffd60a;--fitness:#ff9f0a;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans KR',sans-serif;height:100vh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;}
+
+/* ── 사이드바 ── */
+.sidebar{width:240px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.sidebar-top{padding:28px 20px 20px;border-bottom:1px solid var(--border);}
+.logo{font-size:13px;font-weight:600;letter-spacing:4px;color:var(--text);}
+.logo-sub{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:3px;}
+.rooms-section{flex:1;overflow-y:auto;padding:16px 12px;}
+.rooms-section::-webkit-scrollbar{width:0;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:0 8px;margin-bottom:6px;}
+.section-label{font-size:10px;letter-spacing:1.5px;color:var(--dim);font-weight:500;}
+.add-btn{width:20px;height:20px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1;}
+.add-btn:hover{background:var(--bg4);color:var(--text);}
+.room-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:1px;border:1px solid transparent;position:relative;}
+.room-item:hover{background:var(--bg2);}
+.room-item.active{background:var(--bg3);border-color:var(--border);}
+.room-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.room-item.healthcare .room-dot{background:var(--healthcare);}
+.room-item.english .room-dot{background:var(--english);}
+.room-item.daily .room-dot{background:var(--daily);}
+.room-item.fitness .room-dot{background:var(--fitness);}
+.room-item.custom .room-dot{background:var(--accent);}
+.room-info{flex:1;min-width:0;}
+.room-name-text{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.room-preview{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.room-actions{display:flex;gap:2px;opacity:0;transition:opacity .15s;flex-shrink:0;}
+.room-item:hover .room-actions{opacity:1;}
+.room-action-btn{background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:2px 4px;border-radius:3px;transition:all .15s;}
+.room-action-btn:hover{color:var(--text);background:var(--bg4);}
+.room-name-input{font-size:12px;font-weight:500;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--text);outline:none;width:100%;padding:0;}
+.sidebar-bottom{border-top:1px solid var(--border);padding:10px 12px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;color:var(--muted);font-size:12px;border:1px solid transparent;}
+.nav-item:hover{background:var(--bg2);color:var(--text);}
+.nav-item.active{background:var(--bg3);border-color:var(--border);color:var(--text);}
+.nav-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+
+/* ── 메인 ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);position:relative;}
+
+/* AI 링 애니메이션 오버레이 */
+
+
+/* 헤더 */
+.chat-header{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0;position:relative;z-index:5;}
+.chat-header-left{display:flex;align-items:center;gap:10px;}
+.room-indicator{width:8px;height:8px;border-radius:50%;}
+.room-indicator.healthcare{background:var(--healthcare);}
+.room-indicator.english{background:var(--english);}
+.room-indicator.daily{background:var(--daily);}
+.room-indicator.fitness{background:var(--fitness);}
+.room-indicator.custom{background:var(--accent);}
+.chat-header-title{font-size:13px;font-weight:500;}
+.chat-header-right{display:flex;align-items:center;gap:8px;}
+.header-btn{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;letter-spacing:.3px;background:transparent;border:1px solid var(--border2);color:var(--muted);}
+.header-btn:hover{border-color:var(--healthcare);color:var(--healthcare);}
+.round-pill{font-size:10px;padding:4px 10px;border-radius:20px;letter-spacing:1px;font-weight:500;}
+.round-pill.active{background:rgba(0,113,227,.1);border:1px solid rgba(0,113,227,.2);color:var(--accent);}
+.round-pill.done{background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.2);color:var(--english);}
+
+/* 메시지 */
+.messages{flex:1;overflow-y:auto;padding:32px 28px;display:flex;flex-direction:column;position:relative;z-index:1;}
+.messages::-webkit-scrollbar{width:3px;}
+.messages::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px;}
+
+/* 웰컴 화면 */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px;text-align:center;}
+.welcome-icon{width:56px;height:56px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:4px;}
+.welcome-title{font-size:20px;font-weight:300;letter-spacing:-.5px;color:var(--text);}
+.welcome-desc{font-size:13px;color:var(--muted);line-height:1.7;max-width:300px;}
+.start-btn{margin-top:8px;padding:10px 28px;border-radius:20px;background:var(--text);color:#000;border:none;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.start-btn:hover{background:rgba(255,255,255,.85);transform:scale(1.02);}
+
+/* 메모 배너 */
+.memo-banner{margin-bottom:20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.memo-banner-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;}
+.memo-banner-title{font-size:11px;letter-spacing:1px;color:var(--dim);}
+.memo-banner-toggle{font-size:10px;color:var(--dim);}
+.memo-list{padding:0 14px 10px;display:flex;flex-direction:column;gap:6px;}
+.memo-item{padding:8px 10px;background:var(--bg3);border-radius:7px;font-size:11px;color:var(--muted);line-height:1.6;border:1px solid var(--border);}
+.memo-item-date{font-size:9px;color:var(--dim);margin-bottom:3px;letter-spacing:.5px;}
+
+/* 구분선 */
+.divider{display:flex;align-items:center;gap:14px;margin:20px 0 14px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider-label{font-size:10px;letter-spacing:1.5px;color:var(--dim);white-space:nowrap;}
+
+/* 메시지 그룹 */
+.msg-group{display:flex;flex-direction:column;margin-bottom:14px;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.msg-group.user{align-items:flex-end;}
+.msg-group.ai{align-items:flex-start;}
+.msg-meta{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.msg-group.user .msg-meta{flex-direction:row-reverse;}
+.msg-avatar{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.msg-avatar.gemini{background:rgba(79,158,255,.12);color:var(--gemini);}
+.msg-avatar.gpt{background:rgba(25,195,125,.12);color:var(--gpt);}
+.msg-avatar.claude{background:rgba(224,123,84,.12);color:var(--claude);}
+.msg-avatar.user{background:var(--bg3);color:var(--text);}
+.msg-name{font-size:11px;font-weight:500;letter-spacing:.3px;}
+.msg-name.gemini{color:var(--gemini);}
+.msg-name.gpt{color:var(--gpt);}
+.msg-name.claude{color:var(--claude);}
+.msg-name.user{color:var(--muted);}
+.msg-time{font-size:10px;color:var(--dim);}
+.bubble{max-width:68%;padding:11px 15px;border-radius:12px;font-size:13.5px;line-height:1.7;font-weight:300;}
+.msg-group.user .bubble{background:var(--bg3);border:1px solid var(--border2);border-radius:12px 3px 12px 12px;color:var(--text);font-weight:400;}
+.msg-group.ai .bubble{background:var(--bg1);border:1px solid var(--border);border-radius:3px 12px 12px 12px;}
+.msg-group.ai.gemini .bubble{border-left:1.5px solid rgba(79,158,255,.3);}
+.msg-group.ai.gpt .bubble{border-left:1.5px solid rgba(25,195,125,.3);}
+.msg-group.ai.claude .bubble{border-left:1.5px solid rgba(224,123,84,.3);}
+.bubble strong{font-weight:500;}
+.bubble p{margin-bottom:8px;}
+.bubble p:last-child{margin-bottom:0;}
+.bubble h3,.bubble h4{font-size:13px;font-weight:500;margin:10px 0 4px;}
+
+/* 타이핑 */
+.typing{display:flex;align-items:center;gap:4px;padding:4px 0;}
+.typing-dot{width:4px;height:4px;border-radius:50%;background:var(--dim);animation:td 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes td{0%,60%,100%{opacity:.3;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
+
+/* 채택 */
+.adopt-row{margin-top:5px;padding-left:34px;}
+.adopt-btn{font-size:10px;padding:3px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:all .2s;}
+.adopt-btn:hover{border-color:var(--border2);color:var(--muted);}
+.adopt-btn.picked{border-color:var(--accent);color:var(--accent);background:rgba(0,113,227,.06);}
+
+/* 입력 */
+.input-area{border-top:1px solid var(--border);padding:14px 28px 18px;flex-shrink:0;position:relative;z-index:5;}
+.target-indicator{display:flex;align-items:center;gap:6px;margin-bottom:8px;min-height:18px;}
+.target-badge{font-size:10px;padding:2px 10px;border-radius:20px;letter-spacing:.5px;font-weight:500;opacity:0;transition:opacity .2s;}
+.target-badge.show{opacity:1;}
+.target-badge.gemini{background:rgba(79,158,255,.1);border:1px solid rgba(79,158,255,.2);color:var(--gemini);}
+.target-badge.gpt{background:rgba(25,195,125,.1);border:1px solid rgba(25,195,125,.2);color:var(--gpt);}
+.target-badge.claude{background:rgba(224,123,84,.1);border:1px solid rgba(224,123,84,.2);color:var(--claude);}
+.target-badge.all{background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--muted);}
+.input-box{display:flex;align-items:flex-end;gap:12px;background:var(--bg1);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;transition:border-color .2s;}
+.input-box:focus-within{border-color:rgba(255,255,255,.18);}
+textarea#inp{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;font-family:'Inter','Noto Sans KR',sans-serif;font-weight:300;resize:none;line-height:1.6;min-height:22px;max-height:120px;}
+textarea#inp::placeholder{color:var(--dim);}
+.send-btn{width:32px;height:32px;border-radius:8px;background:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.send-btn:hover{background:rgba(255,255,255,.85);}
+.send-btn:disabled{background:var(--bg4);cursor:not-allowed;}
+.send-btn svg{width:14px;height:14px;fill:#000;}
+.input-hint{font-size:10px;color:var(--dim);text-align:center;margin-top:8px;letter-spacing:.5px;}
+
+/* 사용량 패널 */
+.dash-panel{display:none;flex:1;flex-direction:column;overflow-y:auto;}
+.usage-panel{display:none;flex:1;flex-direction:column;padding:40px 48px;overflow-y:auto;}
+.usage-panel.show{display:flex;}
+.panel-title{font-size:22px;font-weight:300;letter-spacing:-.5px;margin-bottom:28px;}
+.usage-tabs{display:flex;border:1px solid var(--border2);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:24px;}
+.usage-tab{padding:7px 20px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;border:none;color:var(--muted);transition:all .2s;letter-spacing:.5px;}
+.usage-tab.active{background:var(--bg3);color:var(--text);}
+.usage-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.usage-card{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.usage-card.gemini{border-top:1.5px solid var(--gemini);}
+.usage-card.gpt{border-top:1.5px solid var(--gpt);}
+.usage-card.total{border-top:1.5px solid var(--dim);}
+.usage-card-label{font-size:10px;letter-spacing:1.5px;color:var(--dim);margin-bottom:10px;}
+.usage-card-value{font-size:28px;font-weight:300;letter-spacing:-1px;margin-bottom:4px;}
+.usage-card-unit{font-size:12px;color:var(--muted);}
+.usage-log{background:var(--bg1);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.usage-log-header{padding:12px 20px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:1.5px;color:var(--dim);}
+.usage-log-row{display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);font-size:12px;gap:14px;}
+.usage-log-row:last-child{border-bottom:none;}
+.ult{color:var(--dim);width:70px;flex-shrink:0;}
+.ula{width:50px;flex-shrink:0;}
+.ulq{flex:1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:16px;width:480px;max-height:82vh;overflow-y:auto;}
+.modal-lg{width:560px;}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg1);z-index:1;}
+.modal-title{font-size:14px;font-weight:500;}
+.modal-close{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.modal-close:hover{color:var(--muted);}
+.modal-body{padding:18px 24px;}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.btn{padding:8px 20px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;letter-spacing:.3px;font-family:'Inter',sans-serif;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);}
+.btn-ghost:hover{color:var(--text);}
+.btn-primary{background:var(--text);border:none;color:#000;}
+.btn-primary:hover{background:rgba(255,255,255,.85);}
+.btn-danger{background:transparent;border:1px solid var(--healthcare);color:var(--healthcare);}
+.btn-danger:hover{background:rgba(255,69,58,.08);}
+.summary-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;line-height:1.8;color:var(--muted);white-space:pre-wrap;min-height:80px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:10px;letter-spacing:1px;color:var(--dim);}
+.form-input,.form-textarea{background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'Inter','Noto Sans KR',sans-serif;font-weight:300;outline:none;transition:border-color .2s;}
+.form-input:focus,.form-textarea:focus{border-color:rgba(255,255,255,.2);}
+.form-textarea{resize:vertical;min-height:70px;line-height:1.6;}
+.room-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.room-type-btn{padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;transition:all .15s;text-align:left;font-family:'Inter',sans-serif;}
+.room-type-btn:hover{border-color:var(--border2);color:var(--text);background:var(--bg2);}
+.room-type-btn.sel{border-color:var(--accent);color:var(--text);background:rgba(0,113,227,.06);}
+
+/* 메모 삭제 선택 */
+.memo-select-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.memo-select-item{display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;}
+.memo-select-item:hover{border-color:var(--border2);}
+.memo-select-item.sel{border-color:var(--healthcare);background:rgba(255,69,58,.05);}
+.memo-select-item input[type=checkbox]{flex-shrink:0;margin-top:2px;accent-color:var(--healthcare);}
+.memo-select-content{flex:1;font-size:11px;color:var(--muted);line-height:1.6;}
+.memo-select-date{font-size:10px;color:var(--dim);margin-bottom:2px;}
+</style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<div class="sidebar">
+  <div class="sidebar-top">
+    <div class="logo">SIDEKICK</div>
+    <div class="logo-sub">PDH · PRIVATE AI PANEL</div>
+  </div>
+  <div class="rooms-section">
+    <div class="section-header">
+      <span class="section-label">ROOMS</span>
+      <button class="add-btn" onclick="openNewRoom()">+</button>
+    </div>
+    <div id="roomList"></div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="nav-item active" onclick="showDashboard()" id="navDash">
+      <div class="nav-icon">⌂</div><span>홈 대시보드</span>
+    </div>
+    <div class="nav-item" onclick="showUsage()" id="navUsage">
+      <div class="nav-icon">◎</div><span>API 사용량</span>
+    </div>
+    <div class="nav-item" onclick="openProfile()" id="navProfile">
+      <div class="nav-icon">○</div><span>편도현 · 프로필</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div class="main">
+  <!-- 채팅 뷰 -->
+  <div id="chatView" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="room-indicator" id="roomIndicator"></div>
+        <span class="chat-header-title" id="roomTitle">—</span>
+      </div>
+      <div class="chat-header-right">
+        <div class="round-pill" id="roundPill" style="display:none;"></div>
+        <button class="header-btn" onclick="endRoom()">대화 완료</button>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <div class="target-indicator">
+        <div class="target-badge" id="targetBadge"></div>
+      </div>
+      <div class="input-box">
+        <textarea id="inp" placeholder="제미니는 / 지피는 / 클로는 / 또는 그냥 질문..." rows="1"
+          onkeydown="handleKey(event)" oninput="onInput(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="send()">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter 전송 · Shift+Enter 줄바꿈</div>
+    </div>
+  </div>
+
+  <!-- 대시보드 뷰 -->
+  <div class="usage-panel" id="dashView" style="display:flex;">
+    <div id="dashContent" style="width:100%;"></div>
+  </div>
+
+  <!-- 사용량 뷰 -->
+  <div class="usage-panel" id="usageView">
+    <div class="panel-title">API 사용량</div>
+    <div class="usage-tabs">
+      <button class="usage-tab active" onclick="switchUsageTab('daily',this)">일별</button>
+      <button class="usage-tab" onclick="switchUsageTab('monthly',this)">월별</button>
+    </div>
+    <div class="usage-cards">
+      <div class="usage-card gemini"><div class="usage-card-label">GEMINI</div><div class="usage-card-value" id="geminiUsage">0</div><div class="usage-card-unit">호출</div></div>
+      <div class="usage-card gpt"><div class="usage-card-label">GPT</div><div class="usage-card-value" id="gptUsage">0</div><div class="usage-card-unit">호출</div></div>
+      <div class="usage-card total"><div class="usage-card-label">TOTAL</div><div class="usage-card-value" id="totalUsage">0</div><div class="usage-card-unit">총 호출</div></div>
+    </div>
+    <div class="usage-log">
+      <div class="usage-log-header">CALL LOG</div>
+      <div id="usageLogList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 대화 완료 모달 -->
+<div class="modal-overlay" id="endModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">대화 완료 · 요약 저장</span>
+      <button class="modal-close" onclick="closeModal('endModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:12px;">이번 대화를 요약해서 이 방의 메모로 저장합니다.</div>
+      <div class="summary-box" id="summaryBox">요약 생성 중...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('endModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveMemo()">메모 저장 후 초기화</button>
+    </div>
+  </div>
+</div>
+
+<!-- 메모 용량 초과 모달 -->
+<div class="modal-overlay" id="memoFullModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">메모 용량 초과</span>
+      <button class="modal-close" onclick="closeModal('memoFullModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:12px;">이 방의 메모가 10개 가득 찼습니다. 삭제할 메모를 선택해 주세요.</div>
+      <div class="memo-select-list" id="memoSelectList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('memoFullModal')">취소</button>
+      <button class="btn btn-danger" onclick="deleteSelectedMemos()">선택 삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 신규 방 모달 -->
+<div class="modal-overlay" id="newRoomModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">새 대화방</span>
+      <button class="modal-close" onclick="closeModal('newRoomModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="room-type-grid">
+        <button class="room-type-btn" onclick="selRoomType('healthcare',this)">🏥 디지털 헬스케어</button>
+        <button class="room-type-btn" onclick="selRoomType('english',this)">🌐 영어 공부</button>
+        <button class="room-type-btn" onclick="selRoomType('daily',this)">💬 일상 토론</button>
+        <button class="room-type-btn" onclick="selRoomType('fitness',this)">💪 건강트레이너</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">방 이름 (직접 입력)</label>
+        <input class="form-input" id="newRoomName" placeholder="예: 투자 전략, 커리어 고민...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('newRoomModal')">취소</button>
+      <button class="btn btn-primary" onclick="addRoom()">만들기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 프로필 모달 -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">프로필</span>
+      <button class="modal-close" onclick="closeModal('profileModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="p_name" value="편도현"></div>
+        <div class="form-group"><label class="form-label">생년월일</label><input class="form-input" id="p_birth" value="1982.02.21"></div>
+        <div class="form-group"><label class="form-label">혈액형</label><input class="form-input" id="p_blood" value="B형"></div>
+        <div class="form-group"><label class="form-label">MBTI</label><input class="form-input" id="p_mbti" value="ESTJ"></div>
+        <div class="form-group"><label class="form-label">체중(kg)</label><input class="form-input" id="p_weight" value="79.3"></div>
+        <div class="form-group"><label class="form-label">체지방률(%)</label><input class="form-input" id="p_fat" value="12.4"></div>
+        <div class="form-group"><label class="form-label">골격근량(kg)</label><input class="form-input" id="p_muscle" value="39.7"></div>
+        <div class="form-group"><label class="form-label">BMI</label><input class="form-input" id="p_bmi" value="24.2"></div>
+        <div class="form-group full"><label class="form-label">직업/경력</label><input class="form-input" id="p_job" value="디지털 헬스케어 서비스 기획자 (경력 14년 9개월)"></div>
+        <div class="form-group full"><label class="form-label">운동 패턴</label><input class="form-input" id="p_exercise" value="월수 홈트 30분, 화목 런닝 6km"></div>
+        <div class="form-group full"><label class="form-label">식단</label><input class="form-input" id="p_diet" value="아침 커피+사과, 점심 일반식, 저녁 단백질쉐이크+닭가슴살+계란"></div>
+        <div class="form-group full"><label class="form-label">성격</label><textarea class="form-textarea" id="p_personality">장점: 합리적 의사결정, 인내심, 정리능력 탁월
+단점: 급한 성격(개선중), 멘탈 흔들림(개선중)</textarea></div>
+        <div class="form-group full"><label class="form-label">사주</label><textarea class="form-textarea" id="p_saju">임술년 기묘월 임진일 진시. 수기운 강함, 토기운 보완 필요.</textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('profileModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveProfile()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const N8N_URL = 'https://pdh1703.app.n8n.cloud/webhook/ai-panel';
+const MAX_MEMOS = 10;
+
+// 데이터
+let rooms     = JSON.parse(localStorage.getItem('sk_rooms2') || 'null') || initRooms();
+let roomMemos = JSON.parse(localStorage.getItem('sk_memos') || '{}');
+let roomChats = JSON.parse(localStorage.getItem('sk_chats') || '{}');
+let usageLog  = JSON.parse(localStorage.getItem('sk_usage') || '[]');
+let currentRoom = null;
+let usageTab  = 'daily';
+let newRoomType = '';
+let pendingSummary = '';
+let ringAnimId = null;
+let ringColor = [79,158,255];
+
+function initRooms() {
+  return {
+    healthcare:{ id:'healthcare', name:'디지털 헬스케어', type:'healthcare', created: Date.now() },
+    english:   { id:'english',    name:'영어 공부',       type:'english',    created: Date.now() },
+    daily:     { id:'daily',      name:'일상 토론',       type:'daily',      created: Date.now() },
+    fitness:   { id:'fitness',    name:'디지털 건강트레이너', type:'fitness', created: Date.now() }
+  };
+}
+
+function saveData() {
+  localStorage.setItem('sk_rooms2', JSON.stringify(rooms));
+  localStorage.setItem('sk_memos',  JSON.stringify(roomMemos));
+  localStorage.setItem('sk_chats',  JSON.stringify(roomChats));
+  localStorage.setItem('sk_usage',  JSON.stringify(usageLog));
+}
+
+// ── 링 애니메이션 ──
+const ringColors = { gemini:[79,158,255], gpt:[25,195,125], claude:[224,123,84], idle:[60,60,80] };
+
+function startRing(ai) {
+  const overlay = document.getElementById('ringOverlay');
+  const canvas  = document.getElementById('ringCanvas');
+  const ctx     = canvas.getContext('2d');
+  ringColor = ringColors[ai] || ringColors.idle;
+  overlay.classList.add('active');
+  if (ringAnimId) cancelAnimationFrame(ringAnimId);
+
+  const cx = 80, cy = 80, r = 58;
+  const particles = Array.from({length:80}, (_,i) => ({
+    angle: (i/80)*Math.PI*2,
+    speed: .002 + Math.random()*.003,
+    len:   4 + Math.random()*14,
+    alpha: .4 + Math.random()*.6,
+    offset: Math.random()*Math.PI*2
+  }));
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0,0,160,160);
+    const [rr,gg,bb] = ringColor;
+
+    // 글로우 링
+    const grd = ctx.createRadialGradient(cx,cy,r-8,cx,cy,r+8);
+    grd.addColorStop(0,`rgba(${rr},${gg},${bb},0)`);
+    grd.addColorStop(.5,`rgba(${rr},${gg},${bb},.6)`);
+    grd.addColorStop(1,`rgba(${rr},${gg},${bb},0)`);
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle = grd;
+    ctx.lineWidth = 10;
+    ctx.stroke();
+
+    // 파티클
+    particles.forEach(p => {
+      p.angle += p.speed;
+      const pulse = Math.sin(t*.05 + p.offset)*.3+.7;
+      const x = cx + Math.cos(p.angle)*r;
+      const y = cy + Math.sin(p.angle)*r;
+      const ex = x + Math.cos(p.angle)*(p.len*pulse);
+      const ey = y + Math.sin(p.angle)*(p.len*pulse);
+      const grad = ctx.createLinearGradient(x,y,ex,ey);
+      grad.addColorStop(0,`rgba(${rr},${gg},${bb},${p.alpha*pulse})`);
+      grad.addColorStop(1,`rgba(${rr},${gg},${bb},0)`);
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      ctx.lineTo(ex,ey);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    });
+
+    // 중심 글로우
+    const cGrd = ctx.createRadialGradient(cx,cy,0,cx,cy,40);
+    cGrd.addColorStop(0,`rgba(${rr},${gg},${bb},.08)`);
+    cGrd.addColorStop(1,'transparent');
+    ctx.fillStyle = cGrd;
+    ctx.fillRect(0,0,160,160);
+
+    t++;
+    ringAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopRing() {
+  document.getElementById('ringOverlay').classList.remove('active');
+  if (ringAnimId) { cancelAnimationFrame(ringAnimId); ringAnimId = null; }
+}
+
+// ── 방 렌더링 ──
+const welcomeMsgs = {
+  healthcare: { icon:'🏥', title:'디지털 헬스케어 룸', desc:'의료 데이터, AI 헬스케어 트렌드, 건강 관련 무엇이든 물어보세요.' },
+  english:    { icon:'🌐', title:'영어 공부 룸',       desc:'실용 영어 표현, 비즈니스 영어, 원어민 표현까지 함께 공부해요.' },
+  daily:      { icon:'💬', title:'일상 토론 룸',       desc:'다양한 주제로 제미니, 지피와 자유롭게 토론해 보세요.' },
+  fitness:    { icon:'💪', title:'디지털 건강트레이너 룸', desc:'도현님 인바디 기반 맞춤 운동과 식단 조언을 드려요.' },
+  custom:     { icon:'✦',  title:'새 대화방',          desc:'자유롭게 대화를 시작해 보세요.' }
+};
+
+function renderRooms() {
+  const list = document.getElementById('roomList');
+  list.innerHTML = '';
+  Object.values(rooms).forEach(room => {
+    const memos = roomMemos[room.id] || [];
+    const chats = roomChats[room.id] || [];
+    const preview = chats.length ? chats[chats.length-1].content.slice(0,18)+'...' : '대화를 시작하세요';
+    const div = document.createElement('div');
+    div.className = `room-item ${room.type || 'custom'}${currentRoom === room.id ? ' active' : ''}`;
+    div.setAttribute('data-id', room.id);
+    div.onclick = () => switchRoom(room.id);
+    div.innerHTML = `
+      <div class="room-dot"></div>
+      <div class="room-info">
+        <div class="room-name-text" id="rname-${room.id}">${room.name}</div>
+        <div class="room-preview">${preview}${memos.length ? ` · 메모 ${memos.length}` : ''}</div>
+      </div>
+      <div class="room-actions">
+        <button class="room-action-btn" onclick="startRename(event,'${room.id}')" title="이름 변경">✎</button>
+        <button class="room-action-btn" onclick="deleteRoom(event,'${room.id}')" title="삭제">×</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function switchRoom(id) {
+  currentRoom = id;
+  renderRooms();
+  const room = rooms[id];
+  if (!room) return;
+
+  // 헤더
+  document.getElementById('roomTitle').textContent = room.name;
+  const ind = document.getElementById('roomIndicator');
+  ind.className = 'room-indicator ' + (room.type || 'custom');
+
+  document.getElementById('dashView').classList.remove('show');
+  showChat();
+  renderMessages(id);
+}
+
+function renderMessages(id) {
+  const msgs = document.getElementById('messages');
+  const chats = roomChats[id] || [];
+  const memos = roomMemos[id] || [];
+
+  msgs.innerHTML = '';
+
+  // 웰컴 화면 (대화 없을 때)
+  if (chats.length === 0) {
+    const w = welcomeMsgs[rooms[id]?.type] || welcomeMsgs.custom;
+    msgs.innerHTML = `
+      <div class="welcome">
+        <div class="welcome-icon">${w.icon}</div>
+        <div class="welcome-title">${rooms[id]?.name || w.title}에 오신걸 환영합니다</div>
+        <div class="welcome-desc">${w.desc}</div>
+        ${memos.length ? renderMemoBanner(memos) : ''}
+        <button class="start-btn" onclick="focusInput()">대화 시작하기</button>
+      </div>
+    `;
+    return;
+  }
+
+  // 메모 배너
+  if (memos.length) {
+    const banner = document.createElement('div');
+    banner.innerHTML = renderMemoBanner(memos);
+    msgs.appendChild(banner.firstElementChild);
+  }
+
+  // 대화 내용 렌더링
+  chats.forEach(c => {
+    const div = document.createElement('div');
+    div.className = `msg-group ${c.role === 'user' ? 'user' : 'ai ' + (c.ai||'')}`;
+    const name = c.role === 'user' ? '편도현' : (c.ai === 'gemini' ? '제미니' : c.ai === 'gpt' ? '지피' : '클로');
+    const avatarClass = c.role === 'user' ? 'user' : c.ai;
+    const avatarText = c.role === 'user' ? '편' : name[0];
+    div.innerHTML = `
+      <div class="msg-meta">
+        <div class="msg-avatar ${avatarClass}">${avatarText}</div>
+        <span class="msg-name ${avatarClass}">${name}</span>
+        <span class="msg-time">${c.time||''}</span>
+      </div>
+      <div class="bubble">${c.role === 'user' ? esc(c.content) : fmt(c.content)}</div>
+    `;
+    msgs.appendChild(div);
+  });
+
+  scrollBottom();
+  document.getElementById('roundPill').style.display = 'none';
+}
+
+function renderMemoBanner(memos) {
+  const items = memos.map((m, i) => `
+    <div class="memo-item" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;">
+      <span class="memo-item-date" style="font-size:11px;color:var(--muted);">${m.date}</span>
+      <button onclick="deleteMemoItem(${i})" style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;" onmouseover="this.style.color='var(--healthcare)'" onmouseout="this.style.color='var(--dim)'">삭제</button>
+    </div>
+  `).join('');
+  return `
+    <div class="memo-banner">
+      <div class="memo-banner-header" onclick="toggleMemo(this)">
+        <span class="memo-banner-title">MEMO · ${memos.length}개</span>
+        <span class="memo-banner-toggle">▾</span>
+      </div>
+      <div class="memo-list" style="padding:4px 14px 8px;">${items}</div>
+    </div>
+  `;
+}
+
+function deleteMemoItem(idx) {
+  if (!confirm('이 메모를 삭제할까요?')) return;
+  const memos = roomMemos[currentRoom] || [];
+  memos.splice(idx, 1);
+  roomMemos[currentRoom] = memos;
+  saveData();
+  renderMessages(currentRoom);
+}
+
+function toggleMemo(el) {
+  const list = el.nextElementSibling;
+  list.style.display = list.style.display === 'none' ? '' : 'none';
+  el.querySelector('.memo-banner-toggle').textContent = list.style.display === 'none' ? '▸' : '▾';
+}
+
+// ── 이름 변경 ──
+function startRename(e, id) {
+  e.stopPropagation();
+  const el = document.getElementById(`rname-${id}`);
+  const cur = el.textContent;
+  el.innerHTML = `<input class="room-name-input" value="${cur}" onblur="finishRename('${id}',this)" onkeydown="if(event.key==='Enter')this.blur()">`;
+  el.querySelector('input').focus();
+}
+
+function finishRename(id, inp) {
+  const val = inp.value.trim() || rooms[id].name;
+  rooms[id].name = val;
+  saveData();
+  renderRooms();
+  if (currentRoom === id) document.getElementById('roomTitle').textContent = val;
+}
+
+// ── 방 삭제 ──
+function deleteRoom(e, id) {
+  e.stopPropagation();
+  if (!confirm(`"${rooms[id].name}" 방을 삭제할까요?`)) return;
+  delete rooms[id];
+  delete roomMemos[id];
+  delete roomChats[id];
+  saveData();
+  if (currentRoom === id) {
+    currentRoom = null;
+    document.getElementById('messages').innerHTML = '';
+    document.getElementById('roomTitle').textContent = '—';
+  }
+  renderRooms();
+}
+
+// ── 대화 완료 ──
+function endRoom() {
+  const chats = roomChats[currentRoom] || [];
+  if (chats.length === 0) { alert('대화 내용이 없습니다.'); return; }
+
+  // 간단 요약 생성
+  const userMsgs = chats.filter(c => c.role === 'user').map(c => c.content);
+  const aiMsgs   = chats.filter(c => c.role !== 'user');
+  pendingSummary = `[${new Date().toLocaleDateString('ko-KR')}]\n총 ${userMsgs.length}개 질문\n\n주요 질문:\n${userMsgs.map((q,i) => `${i+1}. ${q.slice(0,40)}`).join('\n')}\n\n마지막 AI 답변 요약:\n${aiMsgs.length ? aiMsgs[aiMsgs.length-1].content.slice(0,100)+'...' : '없음'}`;
+
+  document.getElementById('summaryBox').textContent = pendingSummary;
+  document.getElementById('endModal').classList.add('open');
+}
+
+function saveMemo() {
+  if (!currentRoom) return;
+  const memos = roomMemos[currentRoom] || [];
+
+  if (memos.length >= MAX_MEMOS) {
+    closeModal('endModal');
+    showMemoFull();
+    return;
+  }
+
+  memos.push({ date: new Date().toLocaleDateString('ko-KR'), summary: pendingSummary });
+  roomMemos[currentRoom] = memos;
+  roomChats[currentRoom] = [];
+  saveData();
+  closeModal('endModal');
+  renderMessages(currentRoom);
+  renderRooms();
+}
+
+function showMemoFull() {
+  const memos = roomMemos[currentRoom] || [];
+  const list = document.getElementById('memoSelectList');
+  list.innerHTML = memos.map((m,i) => `
+    <div class="memo-select-item" onclick="toggleMemoSel(this)">
+      <input type="checkbox" data-idx="${i}">
+      <div class="memo-select-content">
+        <div class="memo-select-date">${m.date}</div>
+        ${m.summary.slice(0,80)}...
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('memoFullModal').classList.add('open');
+}
+
+function toggleMemoSel(el) {
+  el.classList.toggle('sel');
+  el.querySelector('input').checked = el.classList.contains('sel');
+}
+
+function deleteSelectedMemos() {
+  const checks = document.querySelectorAll('#memoSelectList input:checked');
+  if (checks.length === 0) { alert('삭제할 메모를 선택해 주세요.'); return; }
+  const idxs = Array.from(checks).map(c => parseInt(c.dataset.idx)).sort((a,b) => b-a);
+  const memos = roomMemos[currentRoom] || [];
+  idxs.forEach(i => memos.splice(i,1));
+  roomMemos[currentRoom] = memos;
+
+  // 이제 새 메모 저장
+  memos.push({ date: new Date().toLocaleDateString('ko-KR'), summary: pendingSummary });
+  roomChats[currentRoom] = [];
+  saveData();
+  closeModal('memoFullModal');
+  renderMessages(currentRoom);
+  renderRooms();
+}
+
+// ── 신규 방 ──
+function openNewRoom() {
+  newRoomType = '';
+  document.getElementById('newRoomName').value = '';
+  document.querySelectorAll('.room-type-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('newRoomModal').classList.add('open');
+}
+
+function selRoomType(type, el) {
+  newRoomType = type;
+  document.querySelectorAll('.room-type-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  const names = { healthcare:'디지털 헬스케어', english:'영어 공부', daily:'일상 토론', fitness:'건강트레이너' };
+  document.getElementById('newRoomName').value = names[type] || '';
+}
+
+function addRoom() {
+  const name = document.getElementById('newRoomName').value.trim();
+  if (!name) { alert('방 이름을 입력하세요.'); return; }
+  const id = 'room_' + Date.now();
+  rooms[id] = { id, name, type: newRoomType || 'custom', created: Date.now() };
+  saveData();
+  closeModal('newRoomModal');
+  renderRooms();
+  switchRoom(id);
+}
+
+// ── 메시지 전송 ──
+function detectTarget(text) {
+  const t = text;
+  if (/제미니|gemini/i.test(t)) return 'gemini';
+  if (/지피|gpt|chatgpt/i.test(t)) return 'gpt';
+  if (/클로|claude/i.test(t)) return 'claude';
+  return 'all';
+}
+
+const targetLabels = { gemini:'→ 제미니에게', gpt:'→ 지피에게', claude:'→ 클로에게', all:'→ 전체에게' };
+
+function onInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  const target = detectTarget(el.value);
+  const badge = document.getElementById('targetBadge');
+  if (el.value.trim()) {
+    badge.textContent = targetLabels[target];
+    badge.className = 'target-badge show ' + target;
+  } else {
+    badge.className = 'target-badge';
+  }
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function focusInput() {
+  document.getElementById('inp').focus();
+}
+
+function scrollBottom() {
+  const el = document.getElementById('messages');
+  setTimeout(() => el.scrollTop = el.scrollHeight, 50);
+}
+
+function now() {
+  return new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function fmt(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/### (.*?)(\n|$)/g,'<h3>$1</h3>')
+    .replace(/#### (.*?)(\n|$)/g,'<h4>$1</h4>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+function addMsgToDOM(role, ai, content, showAdopt) {
+  const msgs = document.getElementById('messages');
+  // 웰컴 화면 제거
+  const welcome = msgs.querySelector('.welcome');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  const name = role === 'user' ? '편도현' : (ai === 'gemini' ? '제미니' : ai === 'gpt' ? '지피' : '클로');
+  const avatarClass = role === 'user' ? 'user' : ai;
+  const avatarText = role === 'user' ? '편' : name[0];
+  div.className = `msg-group ${role === 'user' ? 'user' : 'ai ' + (ai||'')}`;
+  div.innerHTML = `
+    <div class="msg-meta">
+      <div class="msg-avatar ${avatarClass}">${avatarText}</div>
+      <span class="msg-name ${avatarClass}">${name}</span>
+      <span class="msg-time">${now()}</span>
+    </div>
+    <div class="bubble">${role === 'user' ? esc(content) : fmt(content)}</div>
+    ${showAdopt ? `<div class="adopt-row"><button class="adopt-btn" onclick="adopt(this)">채택</button></div>` : ''}
+  `;
+  msgs.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+function addTypingDOM(id, ai) {
+  const msgs = document.getElementById('messages');
+  const welcome = msgs.querySelector('.welcome');
+  if (welcome) welcome.remove();
+
+  const name = ai === 'gemini' ? '제미니' : ai === 'gpt' ? '지피' : '클로';
+  const div = document.createElement('div');
+  div.className = `msg-group ai ${ai}`;
+  div.id = id;
+  div.innerHTML = `
+    <div class="msg-meta">
+      <div class="msg-avatar ${ai}">${name[0]}</div>
+      <span class="msg-name ${ai}">${name}</span>
+    </div>
+    <div class="bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>
+  `;
+  msgs.appendChild(div);
+  scrollBottom();
+}
+
+function replaceTypingDOM(id, ai, content, showAdopt) {
+  const div = document.getElementById(id);
+  if (!div) return;
+  const name = ai === 'gemini' ? '제미니' : ai === 'gpt' ? '지피' : '클로';
+  div.innerHTML = `
+    <div class="msg-meta">
+      <div class="msg-avatar ${ai}">${name[0]}</div>
+      <span class="msg-name ${ai}">${name}</span>
+      <span class="msg-time">${now()}</span>
+    </div>
+    <div class="bubble">${fmt(content)}</div>
+    ${showAdopt ? `<div class="adopt-row"><button class="adopt-btn" onclick="adopt(this)">채택</button></div>` : ''}
+  `;
+  scrollBottom();
+}
+
+function adopt(btn) {
+  document.querySelectorAll('.adopt-btn').forEach(b => { b.classList.remove('picked'); b.textContent = '채택'; });
+  btn.classList.add('picked');
+  btn.textContent = '✓ 채택됨';
+}
+
+function logUsage(ai, q) {
+  usageLog.unshift({ time: now(), ai, q: q.slice(0,30), date: new Date().toLocaleDateString('ko-KR') });
+  if (usageLog.length > 100) usageLog.pop();
+}
+
+async function send() {
+  if (!currentRoom) { alert('대화방을 선택해 주세요.'); return; }
+  const inp = document.getElementById('inp');
+  const q = inp.value.trim();
+  if (!q) return;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('targetBadge').className = 'target-badge';
+
+  const target = detectTarget(q);
+
+  // 사용자 메시지 저장 & 표시
+  if (!roomChats[currentRoom]) roomChats[currentRoom] = [];
+  roomChats[currentRoom].push({ role:'user', content:q, time:now() });
+  addMsgToDOM('user', null, q, false);
+
+  // 이전 메모 가져오기
+  const memos = (roomMemos[currentRoom] || []).slice(-3).map(m => m.summary).join('\n---\n');
+
+  // 링 애니메이션 시작
+  const ringAi = target === 'gpt' ? 'gpt' : target === 'claude' ? 'claude' : 'gemini';
+
+  // 타이핑 표시
+  const pill = document.getElementById('roundPill');
+  pill.style.display = 'block';
+  pill.className = 'round-pill active';
+  pill.textContent = '응답 중';
+
+  const tid = Date.now();
+  const tidG = 'tg-' + tid;
+  const tidP = 'tp-' + tid;
+  const tidC = 'tc-' + tid;
+
+  if (target === 'gemini' || target === 'all') addTypingDOM(tidG, 'gemini');
+  if (target === 'gpt'    || target === 'all') addTypingDOM(tidP, 'gpt');
+  if (target === 'claude') addTypingDOM(tidC, 'claude');
+
+  try {
+    const res = await fetch(N8N_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        question: q,
+        category: rooms[currentRoom]?.type || 'daily',
+        target,
+        history: roomChats[currentRoom].slice(-10),
+        memos: memos || '없음'
+      })
+    });
+    const data = await res.json();
+    const gText = data.gemini || '';
+    const pText = data.gpt    || '';
+
+    if (target === 'gemini' || target === 'all') {
+      const txt = gText || '답변을 받지 못했습니다.';
+      replaceTypingDOM(tidG, 'gemini', txt, target === 'all');
+      roomChats[currentRoom].push({ role:'ai', ai:'gemini', content:txt, time:now() });
+      if (gText) logUsage('제미니', q);
+    }
+    if (target === 'gpt' || target === 'all') {
+      const txt = pText || '답변을 받지 못했습니다.';
+      replaceTypingDOM(tidP, 'gpt', txt, target === 'all');
+      roomChats[currentRoom].push({ role:'ai', ai:'gpt', content:txt, time:now() });
+      if (pText) logUsage('지피', q);
+    }
+    if (target === 'claude') {
+      replaceTypingDOM(tidC, 'claude', '클로는 현재 준비 중입니다.', false);
+    }
+
+  } catch(e) {
+    if (target === 'gemini' || target === 'all') replaceTypingDOM(tidG,'gemini','연결 오류: '+e.message,false);
+    if (target === 'gpt'    || target === 'all') replaceTypingDOM(tidP,'gpt','연결 오류: '+e.message,false);
+    if (target === 'claude') replaceTypingDOM(tidC,'claude','연결 오류: '+e.message,false);
+  }
+
+  saveData();
+  renderRooms();  // 사이드바만 업데이트, 메시지 DOM은 건드리지 않음
+  pill.className = 'round-pill done';
+  pill.textContent = '완료';
+  btn.disabled = false;
+}
+
+// ── 사용량 ──
+function showUsage() {
+  document.getElementById('chatView').style.display = 'none';
+  document.getElementById('dashView').classList.remove('show');
+  document.getElementById('usageView').classList.add('show');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('navUsage').classList.add('active');
+  renderUsage();
+}
+
+function showChat() {
+  document.getElementById('chatView').style.display = 'flex';
+  document.getElementById('dashView').classList.remove('show');
+  document.getElementById('usageView').classList.remove('show');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+function switchUsageTab(tab, el) {
+  usageTab = tab;
+  document.querySelectorAll('.usage-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderUsage();
+}
+
+function renderUsage() {
+  const today = new Date().toLocaleDateString('ko-KR');
+  const filtered = usageTab === 'daily' ? usageLog.filter(l => l.date === today) : usageLog;
+  const gc = filtered.filter(l => l.ai === '제미니').length;
+  const pc = filtered.filter(l => l.ai === '지피').length;
+  document.getElementById('geminiUsage').textContent = gc;
+  document.getElementById('gptUsage').textContent    = pc;
+  document.getElementById('totalUsage').textContent  = gc + pc;
+  const ll = document.getElementById('usageLogList');
+  if (!filtered.length) { ll.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px;">기록이 없습니다</div>'; return; }
+  ll.innerHTML = filtered.map(l => `
+    <div class="usage-log-row">
+      <span class="ult">${l.time}</span>
+      <span class="ula" style="color:${l.ai==='제미니'?'var(--gemini)':'var(--gpt)'}">${l.ai}</span>
+      <span class="ulq">${l.q}</span>
+    </div>`).join('');
+}
+
+// ── 모달/프로필 ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openProfile() { document.getElementById('profileModal').classList.add('open'); }
+function saveProfile() {
+  const p = {};
+  ['name','birth','blood','mbti','weight','fat','muscle','bmi','job','exercise','diet','personality','saju'].forEach(k => {
+    p[k] = document.getElementById('p_'+k).value;
+  });
+  localStorage.setItem('sk_profile', JSON.stringify(p));
+  closeModal('profileModal');
+}
+
+
+// ── 대시보드 ──
+const daySchedule = {
+  1: { ai:'gemini', name:'제미니', color:'var(--gemini)', content:'news',    label:'오늘의 뉴스' },
+  2: { ai:'gpt',    name:'지피',   color:'var(--gpt)',    content:'fortune', label:'오늘의 운세' },
+  3: { ai:'gemini', name:'제미니', color:'var(--gemini)', content:'menu',    label:'추천 식단'   },
+  4: { ai:'gemini', name:'제미니', color:'var(--gemini)', content:'news',    label:'오늘의 뉴스' },
+  5: { ai:'gpt',    name:'지피',   color:'var(--gpt)',    content:'fortune', label:'오늘의 운세' },
+  6: { ai:'claude', name:'클로',   color:'var(--claude)', content:'menu',    label:'추천 식단'   },
+  0: { ai:'gpt',    name:'지피',   color:'var(--gpt)',    content:'activity',label:'휴일 추천 활동'},
+};
+
+const contentPlaceholders = {
+  news:     ['① 국내 AI 헬스케어 스타트업 투자 급증, 올해만 2조 돌파 예상', '② 삼성·LG, 웨어러블 헬스케어 기기 신제품 공개 예정', '③ 복지부, 원격의료 플랫폼 규제 완화 추진 발표'],
+  fortune:  ['오늘은 새로운 시도가 좋은 결실을 맺는 날입니다. ESTJ 특유의 추진력을 발휘하면 막혔던 문제가 해결될 것입니다. 오후에 중요한 결정이 있다면 데이터를 충분히 검토 후 결정하세요.'],
+  menu:     ['🥗 점심: 닭가슴살 샐러드 + 현미밥 (단백질 보충, 가볍게)', '🍗 저녁: 고구마 + 계란 + 방울토마토 (운동 후 회복식)'],
+  activity: ['🏃 오전: 러닝 6km 완주 후 스트레칭', '🎮 오후: 레고 신제품 조립 또는 애니메이션 감상', '🛁 저녁: 반신욕 15분으로 한 주 피로 회복'],
+};
+
+const dayNames = ['일','월','화','수','목','금','토'];
+const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+function showDashboard() {
+  document.getElementById('chatView').style.display = 'none';
+  document.getElementById('usageView').classList.remove('show');
+  document.getElementById('dashView').classList.add('show');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('navDash').classList.add('active');
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const now = new Date();
+  const day = now.getDay();
+  const sched = daySchedule[day];
+  const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+  const dateStr = `${now.getFullYear()}년 ${monthNames[now.getMonth()]} ${now.getDate()}일 (${dayNames[day]})`;
+  const items = contentPlaceholders[sched.content] || [];
+
+  const html = `
+    <div style="padding:40px 48px;display:flex;flex-direction:column;gap:24px;max-width:800px;">
+
+      <!-- 인사 카드 -->
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:16px;padding:28px 32px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${sched.color};opacity:.6;"></div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:${sched.color};flex-shrink:0;">${sched.name[0]}</div>
+          <div style="flex:1;">
+            <div style="font-size:11px;letter-spacing:2px;color:var(--dim);margin-bottom:8px;font-weight:500;">${sched.name.toUpperCase()} · ${dayNames[day]}요일 담당</div>
+            <div style="font-size:22px;font-weight:300;letter-spacing:-.5px;color:var(--text);margin-bottom:6px;">안녕하세요, 도현님 👋</div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.6;">오늘은 <strong style="color:var(--text);font-weight:500;">${dateStr}</strong>이고,<br>현재 시각은 <strong style="color:${sched.color};font-weight:500;">${timeStr}</strong>입니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 날씨 카드 (UI 플레이스홀더) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div style="font-size:10px;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px;">TODAY'S WEATHER · 고양시</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="font-size:36px;">⛅</div>
+            <div>
+              <div style="font-size:24px;font-weight:300;letter-spacing:-1px;">18°C</div>
+              <div style="font-size:11px;color:var(--muted);">구름 조금 · 미세먼지 보통</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:10px;color:var(--dim);padding-top:10px;border-top:1px solid var(--border);">n8n 연결 후 실시간 날씨 표시 예정</div>
+        </div>
+        <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div style="font-size:10px;letter-spacing:1.5px;color:var(--dim);margin-bottom:12px;">TODAY'S FOCUS</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            ${day === 1 || day === 3 ? '💪 홈트 데이 — 30분 근력 운동' : day === 2 || day === 4 ? '🏃 런닝 데이 — 6km 목표' : '🧘 휴식 권장일'}
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--dim);">운동 패턴 기반 자동 계산</div>
+        </div>
+      </div>
+
+      <!-- 메인 콘텐츠 카드 -->
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:6px;height:6px;border-radius:50%;background:${sched.color};"></div>
+            <span style="font-size:11px;letter-spacing:1.5px;color:var(--dim);">${sched.label.toUpperCase()}</span>
+          </div>
+          <span style="font-size:10px;color:var(--dim);">${sched.name} 제공 · UI 미리보기</span>
+        </div>
+        <div style="padding:20px;">
+          ${items.map(item => `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.7;display:flex;gap:10px;">
+              <span style="color:var(--text);">${item}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div style="padding:12px 20px;background:var(--bg);font-size:10px;color:var(--dim);letter-spacing:.5px;">
+          n8n 연결 후 실제 AI가 실시간으로 생성합니다
+        </div>
+      </div>
+
+      <!-- 스몰토크 영역 -->
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:20px;">
+        <div style="font-size:10px;letter-spacing:1.5px;color:var(--dim);margin-bottom:14px;">SMALL TALK</div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:${sched.color};flex-shrink:0;">${sched.name[0]}</div>
+          <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:4px 12px 12px 12px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.7;">
+            도현님, 오늘도 좋은 하루 시작하세요! 오늘은 ${sched.label}을 준비했어요. 궁금한 게 있으면 언제든지 대화방에서 물어보세요 😊
+            <div style="margin-top:6px;font-size:10px;color:var(--dim);">n8n 연결 후 실제 AI 스몰토크 활성화</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  document.getElementById('dashContent').innerHTML = html;
+}
+
+// 초기 로드
+renderRooms();
+// 첫 화면은 대시보드
+showDashboard();
+</script>
+</body>
+</html>
