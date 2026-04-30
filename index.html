@@ -917,13 +917,35 @@ function renderChatMsgs(id) {
   if (memos.length) {
     const b = document.createElement('div');
     b.className = 'memo-banner';
-    b.innerHTML = `<div class="memo-hdr" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'"><span class="memo-hdr-t">MEMO · ${memos.length}개</span><span>▾</span></div><div class="memo-list">${memos.map((m,i)=>`<div class="memo-row"><span class="memo-date" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px;" onclick="openMemoDetail('${id}',${i})">${m.date}</span><button class="memo-del" onclick="delMemo(${i})">삭제</button></div>`).join('')}</div>`;
+    const memoRows = memos.map((m,i)=>`
+      <div class="memo-row">
+        <span class="memo-date" style="cursor:pointer;color:var(--muted);font-size:11px;text-decoration:underline;text-underline-offset:3px;" onclick="openMemoDetail('${id}',${i})">${m.date}</span>
+        <button class="memo-del" onclick="delMemo(${i})">삭제</button>
+      </div>`).join('');
+    b.innerHTML = `
+      <div class="memo-hdr" onclick="toggleMemoList(this)">
+        <span class="memo-hdr-t">MEMO · ${memos.length}개</span>
+        <span id="memoArrow">▾</span>
+      </div>
+      <div class="memo-list" id="memoListEl">${memoRows}</div>`;
     el.appendChild(b);
   }
 
   chats.forEach((c,i) => el.appendChild(mkMsgDiv(c.role,c.ai,c.content,false,c.time,i)));
   scrBot('chatMsgs');
   document.getElementById('chatPill').style.display = 'none';
+}
+
+function toggleMemoList(el) {
+  const list = el.nextElementSibling;
+  const arrow = el.querySelector('span:last-child');
+  if (list.style.display === 'none') {
+    list.style.display = '';
+    arrow.textContent = '▾';
+  } else {
+    list.style.display = 'none';
+    arrow.textContent = '▸';
+  }
 }
 
 function openMemoDetail(roomId, idx) {
