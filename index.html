@@ -414,6 +414,21 @@ textarea#stInp::placeholder{color:var(--dim);}
 </div>
 
 <!-- 모달들 -->
+<!-- 메모 상세 모달 -->
+<div class="modal-overlay" id="memoDetailModal">
+  <div class="modal">
+    <div class="mhdr">
+      <span class="mtitle" id="memoDetailTitle">메모 상세</span>
+      <button class="mclose" onclick="cm('memoDetailModal')">×</button>
+    </div>
+    <div class="mbody"><div class="sbox" id="memoDetailBody"></div></div>
+    <div class="mfoot">
+      <button class="btn btn-danger" onclick="delMemoFromDetail()">삭제</button>
+      <button class="btn btn-ghost" onclick="cm('memoDetailModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="newsModal">
   <div class="modal">
     <div class="mhdr"><span class="mtitle" id="newsMTitle">뉴스 상세</span><button class="mclose" onclick="cm('newsModal')">×</button></div>
