@@ -149,6 +149,10 @@ textarea.inp::placeholder{color:var(--dim);}
 .sbtn:hover{background:rgba(255,255,255,.85);}
 .sbtn:disabled{background:var(--bg4);cursor:not-allowed;}
 .sbtn svg{width:12px;height:12px;fill:#000;}
+.stop-btn{width:28px;height:28px;border-radius:7px;background:var(--healthcare);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;display:none;}
+.stop-btn.show{display:flex;}
+.stop-btn:hover{background:#ff6b6b;}
+.stop-btn svg{width:10px;height:10px;fill:#fff;}
 .ihint{font-size:10px;color:var(--dim);text-align:center;margin-top:6px;}
 
 /* ── 대시보드 ── */
@@ -370,6 +374,9 @@ textarea#stInp::placeholder{color:var(--dim);}
       <div class="ibox">
         <textarea class="inp" id="chatInp" placeholder="제미니는 / 지피는 / 클로는 / 또는 그냥 질문..." rows="1"
           onkeydown="handleChatKey(event)" oninput="onChatInput(this)"></textarea>
+        <button class="stop-btn" id="chatStopBtn" onclick="stopRelayBtn()" title="릴레이 중지">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+        </button>
         <button class="sbtn" id="chatSendBtn" onclick="sendChat()">
           <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
         </button>
@@ -1014,14 +1021,8 @@ async function sendChat() {
 
   // 중단 키워드
   if (/^(잠깐|스톱|stop|멈춰|그만|pause)$/i.test(q.trim())) {
-    stopRelay();
+    stopRelayBtn();
     inp.value=''; inp.style.height='auto';
-    const el = document.getElementById('chatMsgs');
-    const notice = document.createElement('div');
-    notice.className = 'divider';
-    notice.innerHTML = '<div class="div-label">대화 일시 중단</div>';
-    el.appendChild(notice);
-    scrBot('chatMsgs');
     return;
   }
 
@@ -1092,12 +1093,26 @@ async function sendChat() {
 function startRelay() {
   if (relayActive) return;
   relayActive = true;
+  document.getElementById('chatStopBtn')?.classList.add('show');
   scheduleRelay();
 }
 
 function stopRelay() {
   relayActive = false;
   if (relayTimer) { clearTimeout(relayTimer); relayTimer = null; }
+  document.getElementById('chatStopBtn')?.classList.remove('show');
+  const pill = document.getElementById('chatPill');
+  if (pill) { pill.className = 'rpill done'; pill.textContent = '완료'; }
+}
+
+function stopRelayBtn() {
+  stopRelay();
+  const el = document.getElementById('chatMsgs');
+  const notice = document.createElement('div');
+  notice.className = 'divider';
+  notice.innerHTML = '<div class="div-label">대화 중단</div>';
+  el.appendChild(notice);
+  scrBot('chatMsgs');
 }
 
 function scheduleRelay() {
@@ -1148,21 +1163,17 @@ async function doRelayTurn() {
 
       // 다음 턴 전환
       relayTurn = relayTurn === 'gemini' ? 'gpt' : 'gemini';
-      pill.className = 'rpill done';
-      pill.textContent = '완료';
+      pill.className = 'rpill active';
+      pill.textContent = (relayTurn === 'gemini' ? '제미니' : '지피') + ' 응답 중';
 
       // 계속 릴레이
       scheduleRelay();
     } else {
       stopRelay();
-      pill.className = 'rpill done';
-      pill.textContent = '완료';
     }
   } catch(e) {
     replTyping(typingId, relayTurn, '연결 오류: ' + e.message, false);
     stopRelay();
-    pill.className = 'rpill done';
-    pill.textContent = '완료';
   }
 }
 
