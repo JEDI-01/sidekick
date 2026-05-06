@@ -324,7 +324,6 @@ textarea#stInp::placeholder{color:var(--dim);}
       <div class="vheader-left"><span class="vtitle">홈 대시보드</span></div>
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="rpill" id="dashPill" style="display:none;"></div>
-        <button class="hbtn" onclick="endHomeSession()">대화 완료</button>
       </div>
     </div>
     <div class="dash-view">
@@ -932,17 +931,35 @@ function renderChatMsgs(id) {
   if (memos.length) {
     const b = document.createElement('div');
     b.className = 'memo-banner';
-    const memoRows = memos.map((m,i)=>`
-      <div class="memo-row">
-        <span class="memo-date" style="cursor:pointer;color:var(--muted);font-size:11px;text-decoration:underline;text-underline-offset:3px;" onclick="openMemoDetail('${id}',${i})">${m.date}</span>
-        <button class="memo-del" onclick="delMemo(${i})">삭제</button>
-      </div>`).join('');
+    const showCount = 3;
+    const recentMemos = memos.slice(-showCount).reverse();
+    const allMemos    = memos.slice(0, -showCount).reverse();
+    const recentRows  = recentMemos.map((m,i)=>{
+      const realIdx = memos.length - 1 - i;
+      return `<div class="memo-row">
+        <span class="memo-date" style="cursor:pointer;color:var(--muted);font-size:11px;text-decoration:underline;text-underline-offset:3px;" onclick="openMemoDetail('${id}',${realIdx})">${m.date}</span>
+        <button class="memo-del" onclick="delMemo(${realIdx})">삭제</button>
+      </div>`;
+    }).join('');
+    const olderRows = allMemos.length ? allMemos.map((m,i)=>{
+      const realIdx = allMemos.length - 1 - i;
+      return `<div class="memo-row">
+        <span class="memo-date" style="cursor:pointer;color:var(--muted);font-size:11px;text-decoration:underline;text-underline-offset:3px;" onclick="openMemoDetail('${id}',${realIdx})">${m.date}</span>
+        <button class="memo-del" onclick="delMemo(${realIdx})">삭제</button>
+      </div>`;
+    }).join('') : '';
     b.innerHTML = `
       <div class="memo-hdr" onclick="toggleMemoList(this)">
         <span class="memo-hdr-t">MEMO · ${memos.length}개</span>
-        <span id="memoArrow">▾</span>
+        <span>▾</span>
       </div>
-      <div class="memo-list" id="memoListEl">${memoRows}</div>`;
+      <div class="memo-list">
+        ${recentRows}
+        ${olderRows ? `<div id="olderMemos" style="display:none;">${olderRows}</div>
+        <div style="text-align:center;padding:4px 0;">
+          <button onclick="document.getElementById('olderMemos').style.display=document.getElementById('olderMemos').style.display==='none'?'block':'none';this.textContent=this.textContent.includes('더')?'접기':'더 보기 (${allMemos.length}개)'" style="background:none;border:none;color:var(--dim);font-size:10px;cursor:pointer;letter-spacing:.5px;">더 보기 (${allMemos.length}개)</button>
+        </div>` : ''}
+      </div>`;
     el.appendChild(b);
   }
 
@@ -1019,7 +1036,9 @@ function delMsg(btn) {
   chats.splice(idx, 1);
   roomChats[currentRoom] = chats;
   save();
+  // 메모는 유지하고 메시지만 재렌더링
   renderChatMsgs(currentRoom);
+  renderRooms();
 }
 
 function mkTyping(id, ai) {
@@ -1268,12 +1287,17 @@ function endRoom() {
 }
 
 function justReset() {
-  // 저장 없이 초기화
   if (endingRoom==='__home__') {
-    homeChats=[]; homeDate=new Date().toLocaleDateString('ko-KR'); save(); cm('endModal'); renderDashboard(); return;
+    homeChats=[]; homeDate=new Date().toLocaleDateString('ko-KR');
+    save(); cm('endModal'); renderDashboard(); return;
   }
-  roomChats[endingRoom]=[]; save(); cm('endModal');
-  if(endingRoom===currentRoom) renderChatMsgs(currentRoom); renderRooms();
+  roomChats[endingRoom]=[];
+  save();
+  cm('endModal');
+  if (endingRoom===currentRoom) {
+    renderChatMsgs(currentRoom);
+  }
+  renderRooms();
 }
 
 async function saveAndReset() {
