@@ -16,6 +16,14 @@
   --healthcare:#ff453a;--english:#30d158;--daily:#ffd60a;--fitness:#ff9f0a;
 }
 body{background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans KR',sans-serif;height:100vh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;}
+.lock-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+.lock-logo{font-size:12px;font-weight:600;letter-spacing:5px;color:var(--text);margin-bottom:8px;}
+.lock-sub{font-size:11px;color:var(--dim);letter-spacing:2px;margin-top:-14px;}
+.lock-input{background:var(--bg1);border:1px solid var(--border2);border-radius:10px;padding:12px 20px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:4px;width:220px;transition:border-color .2s;}
+.lock-input:focus{border-color:rgba(255,255,255,.25);}
+.lock-btn{background:var(--text);color:#000;border:none;border-radius:10px;padding:11px 32px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;width:220px;}
+.lock-btn:hover{background:rgba(255,255,255,.85);}
+.lock-err{font-size:11px;color:var(--healthcare);letter-spacing:.5px;min-height:16px;}
 
 /* 사이드바 */
 .sidebar{width:220px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;}
@@ -285,6 +293,16 @@ textarea#stInp::placeholder{color:var(--dim);}
 </style>
 </head>
 <body>
+
+<!-- 잠금 화면 -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-logo">SIDEKICK</div>
+  <div class="lock-sub">PDH · PRIVATE</div>
+  <input class="lock-input" id="lockInput" type="password" placeholder="••••••"
+    onkeydown="if(event.key==='Enter')checkPw()">
+  <button class="lock-btn" onclick="checkPw()">입장</button>
+  <div class="lock-err" id="lockErr"></div>
+</div>
 
 <!-- 사이드바 -->
 <div class="sidebar">
@@ -1411,11 +1429,31 @@ function cm(id) { document.getElementById(id).classList.remove('open'); }
 function openProfile() { document.getElementById('profileModal').classList.add('open'); }
 function saveProfile() { const p={}; ['name','birth','blood','mbti','weight','fat','muscle','bmi','job','exercise','diet','personality','saju'].forEach(k=>p[k]=document.getElementById('p_'+k).value); localStorage.setItem('sk4_profile',JSON.stringify(p)); cm('profileModal'); }
 
+// ── 비밀번호 ──
+const PW = 'pdh1703'; // 비밀번호 변경 가능
+
+function checkPw() {
+  const val = document.getElementById('lockInput').value;
+  if (val === PW) {
+    document.getElementById('lockScreen').style.display = 'none';
+    sessionStorage.setItem('sk_auth', '1');
+  } else {
+    document.getElementById('lockErr').textContent = '비밀번호가 틀렸습니다';
+    document.getElementById('lockInput').value = '';
+    setTimeout(() => document.getElementById('lockErr').textContent = '', 2000);
+  }
+}
+
 // ── 초기화 ──
 checkDate();
 renderRooms();
 showView('dash');
 renderDashboard();
+
+// 세션 인증 확인
+if (sessionStorage.getItem('sk_auth') === '1') {
+  document.getElementById('lockScreen').style.display = 'none';
+}
 </script>
 </body>
 </html>
