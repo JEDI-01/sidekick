@@ -1253,16 +1253,18 @@ async function doRelayTurn() {
   pill.textContent = aiName + ' 응답 중';
 
   const memos = (roomMemos[currentRoom]||[]).slice(-3).map(m=>m.summary).join('\n---\n');
-  const lastMsg = chats.slice(-1)[0]?.content || '';
+  const lastAiMsg = chats.filter(c => c.role === 'ai').slice(-1)[0]?.content || '';
 
-  try {
-    const payload = {
-      question: lastMsg.slice(0, 300),
-      category: rooms[currentRoom]?.type || 'daily',
-      target,
-      history: chats.slice(-10).map(c=>({role:c.role,ai:c.ai||'',content:c.content.slice(0,200)})),
-      memos: memos || '없음'
-    };
+try {
+  const payload = {
+    question: relayTurn === 'gemini' 
+      ? `지피가 말했습니다: "${lastAiMsg.slice(0, 300)}"\n\n위 내용을 보고 보완하거나 다른 시각을 추가해주세요.`
+      : `제미니가 말했습니다: "${lastAiMsg.slice(0, 300)}"\n\n위 내용을 보고 보완하거나 다른 시각을 추가해주세요.`,
+    category: rooms[currentRoom]?.type || 'daily',
+    target,
+    history: chats.slice(-10).map(c=>({role:c.role,ai:c.ai||'',content:c.content.slice(0,200)})),
+    memos: memos || '없음'
+  };
     const res  = await fetch(N8N, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const data = await res.json();
     const txt  = (relayTurn==='gemini' ? data.gemini : data.gpt) || '';
